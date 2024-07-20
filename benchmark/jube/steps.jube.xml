@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+<fileset name="files">
+    <copy>${jube_benchmark_home}/../../src/stream_src/${src_file}</copy>
+</fileset>
+
+<step name="compile" suffix="${modules}_${size}">
+    <use from="parametersets.jube.xml">sys_module_params</use>
+    <use from="parametersets.jube.xml">compile_params</use>
+    <use>files</use>
+    <do>
+        set -x
+        ml Stages/${stage} ${modules};
+        ${compiler} ${comp_args} ${src_file} -o ${exe_name}
+        set +x
+    </do>
+</step>
+
+<step name="execute" depend="compile" suffix="${modules}_${size}" max_async="64">
+    <use from="parametersets.jube.xml">executeset</use>
+    <use from="parametersets.jube.xml">systemParameter</use>
+    <use from="platform.xml">jobfiles</use>
+    <use from="platform.xml">executesub</use>
+    <do done_file="$done_file">${submit} ${submit_script}</do>
+    <do>sacct -P -o JobID,Start,End,Node,State -j $$(grep -oP &apos;(?&lt;=Submitted batch job )[0-9]+&apos; stdout) > sacct.out</do>
+</step>
+</jube>

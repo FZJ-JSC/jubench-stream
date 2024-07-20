@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+  <benchmark name="stream" outpath="stream_run">
+    <comment>STREAM</comment>
+
+    <include from="steps.jube.xml" path="fileset"/>
+    <include from="steps.jube.xml" path="step"/>
+    <include from="analyse.jube.xml" path="patternset"/>
+    <include from="analyse.jube.xml" path="analyser"/>
+    
+    <!-- Create result table -->
+    <result>
+      <use>analyse</use>
+      <table name="result" style="pretty">
+        <!-- Software Stack -->
+        <column>stage</column>
+        <column>modules</column>
+        <!-- Stream Parameters -->
+        <column title="Exp">exp</column>
+        <column title="Array [MiB]">memory_per_array</column>
+        <column title="Thread [MiB]">memory_total</column>
+        <column title="Threads">threadspertask</column>
+        <column title="CLK/Ins (>20)">clk_ticks</column>
+        <column title="N">ntimes</column>
+        <!-- Stream Results -->
+        <column title="Copy" >copy_best_bw</column>
+        <column title="Scale" >scale_best_bw</column>
+        <column title="Add" >add_best_bw</column>
+        <column title="Triad" >triad_best_bw</column>
+        <column>runtime</column>
+      </table>
+
+      <table name="result-csv" style="csv">
+        <!-- Software Stack -->
+        <column>system</column>
+        <column>stage</column>
+        <column>modules</column>
+        <!-- Stream Parameters -->
+        <column>exp</column>
+        <column>memory_per_array</column>
+        <column>memory_total</column>
+        <column>threadspertask</column>
+        <column>clk_ticks</column>
+        <column>ntimes</column>
+        <!-- Stream Results -->
+        <column title="Copy" >copy_best_bw</column>
+        <column title="Scale" >scale_best_bw</column>
+        <column title="Add" >add_best_bw</column>
+        <column title="Triad" >triad_best_bw</column>
+        <column>runtime</column>
+      </table>
+    </result>
+  </benchmark>
+</jube>

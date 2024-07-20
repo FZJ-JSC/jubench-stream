@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+<patternset name="runtime_pat">
+    <pattern mode="pattern" name="runtime" unit="sec" type="float">real ${jube_pat_fp}</pattern>
+</patternset>
+
+<patternset name="stream_pat">
+
+    <!--<pattern name="clk_ticks" type="float">Each test below will take on the order of ${jube_pat_int}</pattern>-->
+    <pattern name="clk_ticks" type="float">\s+\(=\s+${jube_pat_int}\s+clock ticks\)</pattern>
+    <pattern name="copy_best_bw"   >Copy:(?:\s+${jube_pat_nfp}){0}\s+${jube_pat_fp}</pattern>
+    <pattern name="scale_best_bw"  >Scale:(?:\s+${jube_pat_nfp}){0}\s+${jube_pat_fp}</pattern>
+    <pattern name="add_best_bw"    >Add:(?:\s+${jube_pat_nfp}){0}\s+${jube_pat_fp}</pattern>
+    <pattern name="triad_best_bw"  >Triad:(?:\s+${jube_pat_nfp}){0}\s+${jube_pat_fp}</pattern>
+    <pattern name="copy_avg_time"  >Copy:(?:\s+${jube_pat_nfp}){1}\s+${jube_pat_fp}</pattern>
+    <pattern name="scale_avg_time" >Scale:(?:\s+${jube_pat_nfp}){1}\s+${jube_pat_fp}</pattern>
+    <pattern name="add_avg_time"   >Add:(?:\s+${jube_pat_nfp}){1}\s+${jube_pat_fp}</pattern>
+    <pattern name="triad_avg_time" >Triad:(?:\s+${jube_pat_nfp}){1}\s+${jube_pat_fp}</pattern>
+    <pattern name="copy_min_time"  >Copy:(?:\s+${jube_pat_nfp}){2}\s+${jube_pat_fp}</pattern>
+    <pattern name="scale_min_time" >Scale:(?:\s+${jube_pat_nfp}){2}\s+${jube_pat_fp}</pattern>
+    <pattern name="add_min_time"   >Add:(?:\s+${jube_pat_nfp}){2}\s+${jube_pat_fp}</pattern>
+    <pattern name="triad_min_time" >Triad:(?:\s+${jube_pat_nfp}){2}\s+${jube_pat_fp}</pattern>
+    <pattern name="copy_max_time"  >Copy:(?:\s+${jube_pat_nfp}){3}\s+${jube_pat_fp}</pattern>
+    <pattern name="scale_max_time" >Scale:(?:\s+${jube_pat_nfp}){3}\s+${jube_pat_fp}</pattern>
+    <pattern name="add_max_time"   >Add:(?:\s+${jube_pat_nfp}){3}\s+${jube_pat_fp}</pattern>
+    <pattern name="triad_max_time" >Triad:(?:\s+${jube_pat_nfp}){3}\s+${jube_pat_fp}</pattern>
+    <pattern name="memory_per_array" >Memory per array = ${jube_pat_fp} MiB</pattern>
+    <pattern name="memory_total"     >Total memory required = ${jube_pat_fp} MiB</pattern>
+</patternset>
+
+<!-- Analyse -->
+<analyser name="analyse" reduce="false">
+    <analyse step="execute">
+        <file use="runtime_pat">${errlogfile}</file>
+        <file use="stream_pat">${outlogfile}</file>
+    </analyse>
+</analyser>
+</jube>

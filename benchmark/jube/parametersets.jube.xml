@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jube>
+    <parameterset name="sys_module_params">
+        <!-- System (automated detection) -->
+        <parameter name="system" mode="shell">cat /etc/FZJ/systemname | tr -d '\n'</parameter>
+        <!-- Stages (default 2022) -->
+        <parameter name="stage" tag="s20">2020</parameter>
+        <parameter name="stage" tag="s21">2021</parameter>
+        <parameter name="stage" tag="s22| !(s20|s21)">2022</parameter>
+        <!-- combine stage and compiler -->
+        <parameter name="g"></parameter>
+        <parameter name="g" tag="gcc | varyCompiler | !(intel|nvhpc|aocc)">${stage}-gcc</parameter>
+        <parameter name="i"></parameter>
+        <parameter name="i" tag="intel | varyCompiler">${stage}-intel</parameter>
+        <parameter name="nv"></parameter>
+        <parameter name="nv" tag="nvhpc | varyCompiler">${stage}-nvhpc</parameter>
+        <parameter name="ao"></parameter>
+        <parameter name="ao" tag="aocc | varyCompiler">${stage}-aocc</parameter>
+        <!-- make list of stage-compiler combinations -->
+        <parameter name="software_stack" mode="python">",".join([i for i in "${g} ${i} ${nv} ${ao}".split(" ") if len(i) > 0])</parameter>
+        
+        <parameter name="modules" mode="python">
+        {
+            "${stage}-gcc":   "GCC",
+            "${stage}-intel": "Intel",
+            "${stage}-nvhpc": "NVHPC",
+            "${stage}-aocc":  "AOCC"
+        }.get("${software_stack}","No modules. EXIT!!")
+        </parameter>
+    </parameterset>
+
+    <parameterset name="compile_params">
+        <parameter name="src_file">stream.c</parameter>
+        <parameter name="exe_name">stream_c.exe</parameter>
+        <parameter name="exp" type="int" tag="varySize">10,12,14,16,18,20,22,24,26,28</parameter>
+        <parameter name="exp" type="int" tag="varySizeextended">10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35</parameter>
+        <parameter name="exp" type="int" tag="fixedSize | !(varySize|varySizeextended)">28</parameter>
+        <parameter name="size" type="int" mode="python">2**${exp}</parameter>
+        <parameter name="ntimes" type="int" mode="python">200</parameter>
+        <parameter name="compiler" mode="python">
+        {
+            "${stage}-gcc":   "gcc",
+            "${stage}-intel": "icc",
+            "${stage}-nvhpc": "nvc",
+            "${stage}-aocc":  "clang"
+        }["${software_stack}"]
+        </parameter>
+        <parameter name="comp_args_stream">-fopenmp -DSTREAM_ARRAY_SIZE=${size} -DNTIMES=${ntimes}</parameter>
+        <parameter name="comp_args" mode="python">
+        {
+            "${stage}-gcc":   "-march=znver2 -mtune=znver2 -mcmodel=medium -Ofast -lm -fno-exceptions ${comp_args_stream}",
+            "${stage}-intel": "-march=core-avx2 -Ofast  -DSTATIC -mcmodel=large -qopenmp -shared-intel -ffreestanding -qopt-streaming-stores always ${comp_args_stream}",
+            "${stage}-nvhpc": "-v -tp=zen2 -Wall ${comp_args_stream}",
+            "${stage}-aocc":  "-march=znver2 -fvectorize -Ofast -mcmodel=large -ffp-contract=fast -fnt-store ${comp_args_stream}"
+        }["${software_stack}"]
+        </parameter>
+    </parameterset>
+
+    <parameterset name="systemParameter" init_with="platform.xml">
+        <parameter name="timelimit">00:15:00</parameter>
+        <parameter name="executable">compile/${exe_name}</parameter>
+        <parameter name="queue" mode="python">
+        { 
+            "juwels": "batch", 
+            "juwelsbooster": "booster", 
+            "jurecadc": "dc-cpu", 
+            "jusuf": "batch" 
+        }["${system}"]
+        </parameter>
+        <parameter name="nodes" type="int">1</parameter>
+        <parameter name="numAvailableNumaDomains" mode="shell" type="int">
+        sinfo -p $queue -o "%.4X" | grep -Eo '[0-9]+' | tr -d '\n'
+        </parameter>
+        <parameter name="numCoresPerDomain" mode="shell" type="int">
+        sinfo -p $queue -o "%.4Y" | grep -Eo '[0-9]+' | tr -d '\n'
+        </parameter>
+        <parameter name="numThreadsPerCore" mode="shell" type="int">
+        sinfo -p $queue -o "%.4Z" | grep -Eo '[0-9]+' | tr -d '\n'
+        </parameter>
+        <parameter name="numAvailableCores" mode="python" type="int">
+        ${numAvailableNumaDomains}*${numCoresPerDomain}
+        </parameter>
+        <parameter name="numAvailableThreads" mode="python" type="int">
+        ${numAvailableCores}*${numThreadsPerCore}
+        </parameter>
+        <parameter name="taskspernode" type="int">1</parameter>
+        <parameter name="threadspertask" type="int" tag="varyThreads | !(threads1|threads4|threadsNuma|threadsCores|threadsHyper|optimal)">1,2,4,8,16,24,32,64,128,256</parameter>
+        <parameter name="threadspertask" type="int" tag="threads1">1</parameter>
+        <parameter name="threadspertask" type="int" tag="threads4">4</parameter>
+        <parameter name="threadspertask" type="int" tag="threadsNuma">${numAvailableNumaDomains}</parameter>
+        <parameter name="threadspertask" type="int" tag="threadsCores">${numAvailableCores}</parameter>
+        <parameter name="threadspertask" type="int" tag="threadsHyper">${numAvailableThreads}</parameter>
+        <parameter name="OMP_PLACES" export="true" tag="varyThreads | threads1 | threadsCores | !(threads4|threadsNuma|threadsHyper|optimal)">cores</parameter>
+        <parameter name="OMP_PLACES" export="true" tag="threads4 | threadsNuma">sockets</parameter>
+        <parameter name="OMP_PLACES" export="true" tag="threadsHyper">threads</parameter>
+        <parameter name="OMP_PROC_BIND" export="true" tag="varyThreads | !(threads1|threads4|threadsNuma|threadsCores|threadsHyper|optimal)">spread</parameter>
+        <parameter name="OMP_PROC_BIND" export="true" tag="threads4">master</parameter>
+        <parameter name="OMP_PROC_BIND" export="true" tag="threads1 | threadsCores | threadsHyper | threadsNuma">close</parameter>
+        <parameter name="OMP_DISPLAY_ENV" export="true">VERBOSE</parameter>
+        <parameter name="preprocess">ml Stages/${stage} ${modules};</parameter>
+        <parameter name="measurement">time -p</parameter>
+        <parameter name="account">jscbenchmark</parameter>
+        <parameter name="gres" mode="python">"gpu:1" if "${system}"=="juwelsbooster" else "NONE"</parameter>
+
+        <!-- ===================== To be modified ============================= -->
+        <parameter name="threadspertask"  type="int"  tag="optimal">???</parameter>
+        <parameter name="OMP_PLACES"    export="true" tag="optimal">???</parameter>
+        <parameter name="OMP_PROC_BIND" export="true" tag="optimal">???</parameter>
+        <!-- ================================================================== -->
+    </parameterset>
+  
+    <parameterset name="executeset" init_with="platform.xml">
+        <parameter name="args_starter">--cpu_bind=none --disable-turbomode</parameter>
+    </parameterset>
+</jube>
